@@ -39,7 +39,7 @@ public class ChirpServiceTest {
 
     @BeforeClass
     public static void setUp() throws InterruptedException, ExecutionException, TimeoutException {
-        server = startServer(defaultSetup().withCassandra(true));
+        server = startServer(defaultSetup().withJdbc());
 
         // This is a canary wait to ensure the server is up and running so tests can start. If
         // this fails it's not a test failure, it's that the machine running this is slow.

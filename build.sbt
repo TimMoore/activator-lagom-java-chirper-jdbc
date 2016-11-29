@@ -74,7 +74,8 @@ lazy val chirpImpl = project("chirp-impl")
     resolvers += bintrayRepo("hajile", "maven"),
     resolvers += bintrayRepo("hseeberger", "maven"),
     libraryDependencies ++= Seq(
-      lagomJavadslPersistenceCassandra,
+      "com.h2database" % "h2" % "1.4.192",
+      lagomJavadslPersistenceJdbc,
       lagomJavadslPubSub,
       lagomJavadslTestKit
     )
