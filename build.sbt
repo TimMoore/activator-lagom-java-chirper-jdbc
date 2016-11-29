@@ -52,7 +52,8 @@ lazy val chirpImpl = project("chirp-impl")
   .enablePlugins(LagomJava, SbtReactiveAppPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      lagomJavadslPersistenceCassandra,
+      "com.h2database" % "h2" % "1.4.192",
+      lagomJavadslPersistenceJdbc,
       lagomJavadslPubSub,
       lagomJavadslTestKit
     )
