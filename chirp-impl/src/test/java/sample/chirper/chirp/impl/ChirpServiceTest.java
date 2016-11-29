@@ -8,6 +8,7 @@ import akka.stream.testkit.TestSubscriber.Probe;
 import akka.stream.testkit.javadsl.TestSink;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.pcollections.TreePVector;
 import sample.chirper.chirp.api.Chirp;
@@ -21,13 +22,14 @@ import java.time.Instant;
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Ignore
 public class ChirpServiceTest {
 
     private static TestServer server;
 
     @BeforeClass
     public static void setUp() {
-        server = startServer(defaultSetup().withCassandra(true));
+        server = startServer(defaultSetup());
     }
 
     @AfterClass
