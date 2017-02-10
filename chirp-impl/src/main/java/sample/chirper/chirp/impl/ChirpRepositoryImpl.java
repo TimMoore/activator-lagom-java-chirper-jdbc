@@ -107,7 +107,7 @@ class ChirpRepositoryImpl implements ChirpRepository {
         private void createTable(Connection connection) throws SQLException {
             connection.prepareStatement(
                     "CREATE TABLE IF NOT EXISTS chirp ("
-                            + "userId VARCHAR, timestamp DATETIME, uuid UUID, message TEXT, "
+                            + "userId VARCHAR(255), timestamp DATETIME, uuid VARCHAR(36), message TEXT, "
                             + "PRIMARY KEY (userId, timestamp, uuid))"
             ).execute();
         }
