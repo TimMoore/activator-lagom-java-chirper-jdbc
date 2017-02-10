@@ -40,7 +40,8 @@ lazy val chirpImpl = project("chirp-impl")
     libraryDependencies ++= Seq(
       lagomJavadslPersistenceJdbc,
       lagomJavadslPubSub,
-      lagomJavadslTestKit
+      lagomJavadslTestKit,
+      "mysql" % "mysql-connector-java" % "6.0.5"
     )
   )
   .settings(lagomForkedTestSettings: _*)
