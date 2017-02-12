@@ -20,9 +20,9 @@ import java.util.concurrent.CompletionStage;
 class ChirpRepositoryImpl implements ChirpRepository {
     private static final int NUM_RECENT_CHIRPS = 10;
     private static final String SELECT_HISTORICAL_CHIRPS =
-            "SELECT * FROM chirp WHERE userId IN (select * from TABLE(x VARCHAR = ?)) AND timestamp >= ? ORDER BY timestamp ASC";
+            "SELECT * FROM chirp WHERE userId IN (SELECT * FROM unnest(?)) AND timestamp >= ? ORDER BY timestamp ASC";
     private static final String SELECT_RECENT_CHIRPS =
-            "SELECT * FROM chirp WHERE userId IN (select * from TABLE(x VARCHAR = ?)) ORDER BY timestamp DESC LIMIT " + NUM_RECENT_CHIRPS;
+            "SELECT * FROM chirp WHERE userId IN (SELECT * FROM unnest(?)) ORDER BY timestamp DESC LIMIT " + NUM_RECENT_CHIRPS;
 
     private final JdbcSession db;
 
@@ -43,7 +43,8 @@ class ChirpRepositoryImpl implements ChirpRepository {
     private List<Chirp> getHistoricalChirps(Connection connection, PSequence<String> userIds, long timestamp)
             throws SQLException {
         PreparedStatement statement = connection.prepareStatement(SELECT_HISTORICAL_CHIRPS);
-        statement.setObject(1, userIds.toArray());
+        Array userIdsArray = connection.createArrayOf("VARCHAR", userIds.toArray());
+        statement.setArray(1, userIdsArray);
         statement.setTimestamp(2, new Timestamp(timestamp));
         return mapChirps(statement.executeQuery());
     }
@@ -60,7 +61,8 @@ class ChirpRepositoryImpl implements ChirpRepository {
     private List<Chirp> getRecentChirps(Connection connection, PSequence<String> userIds)
             throws SQLException {
         PreparedStatement statement = connection.prepareStatement(SELECT_RECENT_CHIRPS);
-        statement.setObject(1, userIds.toArray());
+        Array userIdsArray = connection.createArrayOf("VARCHAR", userIds.toArray());
+        statement.setArray(1, userIdsArray);
         return mapChirps(statement.executeQuery());
     }
 
@@ -107,7 +109,7 @@ class ChirpRepositoryImpl implements ChirpRepository {
         private void createTable(Connection connection) throws SQLException {
             connection.prepareStatement(
                     "CREATE TABLE IF NOT EXISTS chirp ("
-                            + "userId VARCHAR, timestamp DATETIME, uuid UUID, message TEXT, "
+                            + "userId VARCHAR, timestamp TIMESTAMP, uuid VARCHAR(36), message TEXT, "
                             + "PRIMARY KEY (userId, timestamp, uuid))"
             ).execute();
         }
