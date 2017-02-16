@@ -15,14 +15,11 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.CompletionStage;
 
 class ChirpRepositoryImpl implements ChirpRepository {
     private static final int NUM_RECENT_CHIRPS = 10;
-    private static final String SELECT_HISTORICAL_CHIRPS =
-            "SELECT * FROM chirp WHERE userId IN (select * from TABLE(x VARCHAR = ?)) AND timestamp >= ? ORDER BY timestamp ASC";
-    private static final String SELECT_RECENT_CHIRPS =
-            "SELECT * FROM chirp WHERE userId IN (select * from TABLE(x VARCHAR = ?)) ORDER BY timestamp DESC LIMIT " + NUM_RECENT_CHIRPS;
 
     private final JdbcSession db;
 
@@ -42,10 +39,18 @@ class ChirpRepositoryImpl implements ChirpRepository {
 
     private List<Chirp> getHistoricalChirps(Connection connection, PSequence<String> userIds, long timestamp)
             throws SQLException {
-        PreparedStatement statement = connection.prepareStatement(SELECT_HISTORICAL_CHIRPS);
-        statement.setObject(1, userIds.toArray());
-        statement.setTimestamp(2, new Timestamp(timestamp));
+        PreparedStatement statement = connection.prepareStatement(selectHistoricalChirpsStatement(userIds.size()));
+        for (int i = 0; i < userIds.size(); i++) {
+            statement.setObject(i + 1, userIds.get(i));
+        }
+        statement.setTimestamp(userIds.size() + 1, new Timestamp(timestamp));
         return mapChirps(statement.executeQuery());
+    }
+
+    private String selectHistoricalChirpsStatement(int userIdCount) {
+        return "SELECT * FROM chirp WHERE userId IN " +
+                bindList(userIdCount) +
+                " AND timestamp >= ? ORDER BY timestamp ASC";
     }
 
     public CompletionStage<PSequence<Chirp>> getRecentChirps(PSequence<String> userIds) {
@@ -59,9 +64,25 @@ class ChirpRepositoryImpl implements ChirpRepository {
 
     private List<Chirp> getRecentChirps(Connection connection, PSequence<String> userIds)
             throws SQLException {
-        PreparedStatement statement = connection.prepareStatement(SELECT_RECENT_CHIRPS);
-        statement.setObject(1, userIds.toArray());
+        PreparedStatement statement = connection.prepareStatement(selectRecentChirpsStatement(userIds.size()));
+        for (int i = 0; i < userIds.size(); i++) {
+            statement.setObject(i + 1, userIds.get(i));
+        }
         return mapChirps(statement.executeQuery());
+    }
+
+    private String selectRecentChirpsStatement(int userIdCount) {
+        return "SELECT * FROM chirp WHERE userId IN " +
+                bindList(userIdCount) +
+                " ORDER BY timestamp DESC LIMIT " + NUM_RECENT_CHIRPS;
+    }
+
+    private String bindList(int count) {
+        StringJoiner list = new StringJoiner(",", "(", ")");
+        for (int i = 0; i < count; i++) {
+            list.add("?");
+        }
+        return list.toString();
     }
 
     private List<Chirp> mapChirps(ResultSet chirps) throws SQLException {
