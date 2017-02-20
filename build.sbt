@@ -37,10 +37,21 @@ lazy val chirpImpl = project("chirp-impl")
   .enablePlugins(LagomJava)
   .settings(
     version := "1.0-SNAPSHOT",
+    // To use this, you'll need to register for an Oracle account and manually
+    // install the JDBC driver into your local Maven repository.
+    // See http://stackoverflow.com/a/33883350/29470 for general instructions.
+    // Use this command to install:
+    // mvn install:install-file -Dfile=ojdbc7.jar -DgeneratePom=true -DgroupId=com.oracle.jdbc -DartifactId=ojdbc7 -Dversion=12.1.0.2 -Dpackaging=jar
+    resolvers ++= Seq(
+      Resolver.mavenLocal,
+      "Typesafe Releases" at "http://repo.typesafe.com/typesafe/maven-releases/"
+    ),
     libraryDependencies ++= Seq(
       lagomJavadslPersistenceJdbc,
       lagomJavadslPubSub,
-      lagomJavadslTestKit
+      lagomJavadslTestKit,
+      "com.oracle.jdbc" % "ojdbc7" % "12.1.0.2",
+      "com.typesafe.slick" %% "slick-extensions" % "3.1.0"
     )
   )
   .settings(lagomForkedTestSettings: _*)
