@@ -93,7 +93,7 @@ class ChirpRepositoryImpl implements ChirpRepository {
         @Override
         public ReadSideHandler<ChirpTimelineEvent> buildHandler() {
             return readSide.<ChirpTimelineEvent>builder("ChirpTimelineEventReadSideProcessor")
-                    .setGlobalPrepare(this::createTable)
+//                    .setGlobalPrepare(this::createTable)
                     .setEventHandler(ChirpTimelineEvent.ChirpAdded.class,
                             (connection, event) -> insertChirp(connection, event.chirp))
                     .build();
@@ -106,15 +106,15 @@ class ChirpRepositoryImpl implements ChirpRepository {
 
         private void createTable(Connection connection) throws SQLException {
             connection.prepareStatement(
-                    "CREATE TABLE IF NOT EXISTS chirp ("
-                            + "userId VARCHAR, timestamp DATETIME, uuid UUID, message TEXT, "
-                            + "PRIMARY KEY (userId, timestamp, uuid))"
+                    "CREATE TABLE chirp ("
+                            + "userId VARCHAR2(255), \"timestamp\" TIMESTAMP, uuid VARCHAR2(36), message VARCHAR2(160), "
+                            + "PRIMARY KEY (userId, \"timestamp\", uuid))"
             ).execute();
         }
 
         private void insertChirp(Connection connection, Chirp chirp) throws SQLException {
             PreparedStatement insertChirp = connection.prepareStatement(
-                    "INSERT INTO chirp (userId, uuid, timestamp, message) VALUES (?, ?, ?, ?)"
+                    "INSERT INTO chirp (userId, uuid, \"timestamp\", message) VALUES (?, ?, ?, ?)"
             );
             insertChirp.setString(1, chirp.userId);
             insertChirp.setString(2, chirp.uuid);
