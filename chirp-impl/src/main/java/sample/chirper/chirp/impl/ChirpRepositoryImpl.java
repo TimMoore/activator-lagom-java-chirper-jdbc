@@ -50,7 +50,7 @@ class ChirpRepositoryImpl implements ChirpRepository {
     private String selectHistoricalChirpsStatement(int userIdCount) {
         return "SELECT * FROM chirp WHERE userId IN " +
                 bindList(userIdCount) +
-                " AND timestamp >= ? ORDER BY timestamp ASC";
+                " AND timestamp >= ? ORDER BY \"timestamp\" ASC";
     }
 
     public CompletionStage<PSequence<Chirp>> getRecentChirps(PSequence<String> userIds) {
@@ -74,7 +74,8 @@ class ChirpRepositoryImpl implements ChirpRepository {
     private String selectRecentChirpsStatement(int userIdCount) {
         return "SELECT * FROM chirp WHERE userId IN " +
                 bindList(userIdCount) +
-                " ORDER BY timestamp DESC LIMIT " + NUM_RECENT_CHIRPS;
+                " AND ROWNUM <= " + NUM_RECENT_CHIRPS +
+                " ORDER BY \"timestamp\" DESC";
     }
 
     private String bindList(int count) {
