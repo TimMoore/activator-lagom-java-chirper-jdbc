@@ -12,12 +12,15 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.pcollections.TreePVector;
+import play.api.db.DBApi;
 import sample.chirper.chirp.api.Chirp;
 import sample.chirper.chirp.api.ChirpService;
 import sample.chirper.chirp.api.HistoricalChirpsRequest;
 import sample.chirper.chirp.api.LiveChirpsRequest;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -39,7 +42,15 @@ public class ChirpServiceTest {
 
     @BeforeClass
     public static void setUp() throws InterruptedException, ExecutionException, TimeoutException {
-        server = startServer(defaultSetup().withJdbc());
+        server = startServer(defaultSetup().withJdbc().configureBuilder(builder ->
+                builder
+                        .configure("db.default.driver", "org.postgresql.Driver")
+                        .configure("db.default.url", "jdbc:postgresql://localhost:5432/chirp_test?user=chirp")
+                        .configure("jdbc-journal.slick.profile", "slick.jdbc.PostgresProfile$")
+                        .configure("jdbc-read-journal.slick.profile", "slick.jdbc.PostgresProfile$")
+                        .configure("jdbc-snapshot-store.slick.profile", "slick.jdbc.PostgresProfile$")
+                        .configure("lagom.persistence.read-side.jdbc.slick.profile", "slick.jdbc.PostgresProfile$")
+        ));
 
         // This is a canary wait to ensure the server is up and running so tests can start. If
         // this fails it's not a test failure, it's that the machine running this is slow.
@@ -53,6 +64,17 @@ public class ChirpServiceTest {
 
     @AfterClass
     public static void tearDown() {
+        server.app().injector().instanceOf(DBApi.class).database("default").withConnection(conn -> {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("DROP TABLE chirp");
+                stmt.executeUpdate("DROP TABLE journal");
+                stmt.executeUpdate("DROP TABLE read_side_offsets");
+                stmt.executeUpdate("DROP TABLE snapshot");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        });
         server.stop();
         server = null;
     }
@@ -124,7 +146,7 @@ public class ChirpServiceTest {
         addChirp(chirpService, chirp2);
 
         HistoricalChirpsRequest request = new HistoricalChirpsRequest(Instant.now().minusSeconds(20),
-            TreePVector.<String>empty().plus("usr5").plus("usr6"));
+                TreePVector.<String>empty().plus("usr5").plus("usr6"));
 
         eventually(FiniteDuration.create(10, SECONDS), () -> {
             Source<Chirp, ?> chirps = chirpService.getHistoricalChirps().invoke(request).toCompletableFuture().get(serviceInvocationTimeout, SECONDS);
